@@ -2,23 +2,19 @@ import { getSafer as getSaferRandom } from "random-numorstr"
 import * as bs32 from "base32"
 import * as crypto from "crypto"
 
+function hexToBytes(hex) {
+    var bytes = [];
+    for (var c = 0, C = hex.length; c < C; c += 2) {
+        bytes.push(parseInt(hex.substr(c, 2), 16));
+    }
+    return bytes;
+}
+
 export function getOtpSecret(): string {
     const random = getSaferRandom();
     return bs32.encode(random)
 }
-/**
- * 格式
- * otpauth://TYPE/LABEL?PARAMETERS
- * TYPE 支持 hotp 或 totp；
- * LABEL 用来指定用户身份，例如用户名、邮箱或者手机号，前面还可以加上服务提供者，需要做 URI 编码。
- * PARAMETERS 用来指定参数，它的格式与 URL 的 Query 部分一样，也是由多对 key 和 value 组成，也需要做 URL 编码。可指定的参数有这些：
- * secret：必须，密钥 K，需要编码为 base32 格式；
- * algorithm：可选，HMAC 的哈希算法，默认 SHA1。Google Authenticator 不支持这个参数；
- * digits：可选，校验码长度，6 位或 8 位，默认 6 位。Google Authenticator 不支持这个参数；
- * counter：可选，指定 HOTP 算法中，计数器 C 的默认值，默认 0；
- * period：可选，指定 TOTP 算法中的间隔时间 TS，默认 30 秒。Google Authenticator 不支持这个参数；
- * issuer：可选（强烈推荐），指定服务提供者。这个字段会在 Google Authenticator 客户端中单独显示，在添加了多个服务者提供的 2FA 后特别有用；
- */
+
 export function getGoogleTotpUri(secret: string, app: string = "app", user: string, label?: string): string {
     const protocol = "otpauth://"
     const type = "totp"
@@ -40,14 +36,13 @@ export function getGoogleTotpUri(secret: string, app: string = "app", user: stri
 export function getOtpCode(secret: string, expire: number = 30): string {
     const step: string = Math.floor(Date.now() / (expire * 1000)).toString()
     const hash: string = crypto.createHmac("sha1", secret).update(step).digest("hex")
-    const lastLetterOfHash: number = parseInt(hash[hash.length - 1], 16)
-    const slice: string = hash.substring(lastLetterOfHash + 1, 8)
-    const hex: number = parseInt(slice, 16)
-    let res: string = String(hex % 1000000)
-    while (res.length < 6) {
-        res = "0" + res
-    }
-    return res
+    var h = hexToBytes(hash);
+    var offset = h[19] & 0xf;
+    const v = (h[offset] & 0x7f) << 24 |
+        (h[offset + 1] & 0xff) << 16 |
+        (h[offset + 2] & 0xff) << 8 |
+        (h[offset + 3] & 0xff) % 1000000;
+    return Array(7 - String(v).length).join('0') + String(v)
 }
 
 export function checkCodeFromClient(secret: string, code: string | number): boolean {

@@ -3,6 +3,13 @@ exports.__esModule = true;
 var random_numorstr_1 = require("random-numorstr");
 var bs32 = require("base32");
 var crypto = require("crypto");
+function hexToBytes(hex) {
+    var bytes = [];
+    for (var c = 0, C = hex.length; c < C; c += 2) {
+        bytes.push(parseInt(hex.substr(c, 2), 16));
+    }
+    return bytes;
+}
 function getOtpSecret() {
     var random = random_numorstr_1.getSafer();
     return bs32.encode(random);
@@ -21,14 +28,13 @@ function getOtpCode(secret, expire) {
     if (expire === void 0) { expire = 30; }
     var step = Math.floor(Date.now() / (expire * 1000)).toString();
     var hash = crypto.createHmac("sha1", secret).update(step).digest("hex");
-    var lastLetterOfHash = parseInt(hash[hash.length - 1], 16);
-    var slice = hash.substring(lastLetterOfHash + 1, 8);
-    var hex = parseInt(slice, 16);
-    var res = String(hex % 1000000);
-    while (res.length < 6) {
-        res = "0" + res;
-    }
-    return res;
+    var h = hexToBytes(hash);
+    var offset = h[19] & 0xf;
+    var v = (h[offset] & 0x7f) << 24 |
+        (h[offset + 1] & 0xff) << 16 |
+        (h[offset + 2] & 0xff) << 8 |
+        (h[offset + 3] & 0xff) % 1000000;
+    return Array(7 - String(v).length).join('0') + String(v);
 }
 exports.getOtpCode = getOtpCode;
 function checkCodeFromClient(secret, code) {
