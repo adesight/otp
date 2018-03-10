@@ -1,7 +1,7 @@
 # OTP
 one-time password for Node.js
 
-#Usage
+# Usage
 
 ```js
 import {
