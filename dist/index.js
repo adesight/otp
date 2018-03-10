@@ -1,7 +1,6 @@
 "use strict";
 exports.__esModule = true;
-var random_numorstr_1 = require("random-numorstr");
-var bs32 = require("base32");
+var bs32 = require("thirty-two");
 var crypto = require("crypto");
 function hexToBytes(hex) {
     var bytes = [];
@@ -10,17 +9,21 @@ function hexToBytes(hex) {
     }
     return bytes;
 }
-function getOtpSecret() {
-    var random = random_numorstr_1.getSafer();
-    return bs32.encode(random);
+function getOtpSecret(size) {
+    if (size === void 0) { size = 16; }
+    var set = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz!@#$%^&*()<>?/[]{},.:;';
+    var res = '';
+    while (res.length < size) {
+        res += set[Math.floor(Math.random() * set.length)];
+    }
+    return bs32.encode(res).toString().replace(/=/g, '');
 }
 exports.getOtpSecret = getOtpSecret;
-function getGoogleTotpUri(secret, app, user, label) {
-    if (app === void 0) { app = "app"; }
+function getGoogleTotpUri(secret, sp, user) {
+    if (sp === void 0) { sp = "app"; }
     var protocol = "otpauth://";
     var type = "totp";
-    var labelStr = label || null;
-    var res = "" + protocol + type + app + ":" + user + "?secret=" + secret;
+    var res = "" + protocol + type + "/" + sp + ":" + user + "?secret=" + secret;
     return res;
 }
 exports.getGoogleTotpUri = getGoogleTotpUri;

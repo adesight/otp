@@ -1,5 +1,4 @@
-import { getSafer as getSaferRandom } from "random-numorstr"
-import * as bs32 from "base32"
+import * as bs32 from "thirty-two"
 import * as crypto from "crypto"
 
 function hexToBytes(hex) {
@@ -10,16 +9,34 @@ function hexToBytes(hex) {
     return bytes;
 }
 
-export function getOtpSecret(): string {
-    const random = getSaferRandom();
-    return bs32.encode(random)
+export function getOtpSecret(size: number = 16): string {
+    var set = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz!@#$%^&*()<>?/[]{},.:;';
+    var res = '';
+    while (res.length < size) {
+        res += set[Math.floor(Math.random() * set.length)];
+    }
+    return bs32.encode(res).toString().replace(/=/g, '');
 }
 
-export function getGoogleTotpUri(secret: string, app: string = "app", user: string, label?: string): string {
+/**
+ * format 
+ * otpauth://TYPE/LABEL?PARAMETERS
+ * TYPE 支持 hotp 或 totp；
+ * LABEL 用来指定用户身份，例如用户名、邮箱或者手机号，前面还可以加上服务提供者，需要做 URI 编码。它是给人看的，不影响最终校验码的生成。
+ * PARAMETERS 类似 querystring，可包含以下字段
+ * secret：必须，密钥 K，需要编码为 base32 格式；
+ * algorithm：可选，HMAC 的哈希算法，默认 SHA1。Google Authenticator 不支持这个参数；
+ * digits：可选，校验码长度，6 位或 8 位，默认 6 位。Google Authenticator 不支持这个参数；
+ * counter：可选，指定 HOTP 算法中，计数器 C 的默认值，默认 0；
+ * period：可选，指定 TOTP 算法中的间隔时间 TS，默认 30 秒。Google Authenticator 不支持这个参数；
+ * issuer：可选（强烈推荐），指定服务提供者。这个字段会在 Google Authenticator 客户端中单独显示，在添加了多个服务者提供的 2FA 后特别有用；
+ * 详细参考： https://github.com/google/google-authenticator/wiki/Key-Uri-Format
+ */
+export function getGoogleTotpUri(secret: string, sp: string = "app", user: string): string {
     const protocol = "otpauth://"
     const type = "totp"
-    const labelStr = label || null
-    const res = `${protocol}${type}${app}:${user}?secret=${secret}`
+    // sp = 服务提供者
+    const res = `${protocol}${type}/${sp}:${user}?secret=${secret}`
     return res
 }
 

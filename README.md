@@ -1,9 +1,20 @@
-# otp
-one-time password for Node
+# OTP
+one-time password for Node.js
 
-- [ ] topt
-## Usage
-Coding...
+#Usage
 
-## Detail
-Coding...
+```js
+import {
+    getGoogleTotpUri,
+    getOtpSecret,
+    getOtpCode,
+    checkCodeFromClient
+} from './dist/index.js'
+
+// get otp string
+const secretForClient = getOtpSecret();
+const totpUri = getGoogleTotpUri("secret", "service provider", "user identifier")
+const expire = 30
+const otpCode = getOtpCode("secret", expire)
+const result = checkCodeFromClient("secret", "string or number code")
+```
