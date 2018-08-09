@@ -1,25 +1,23 @@
-import * as bs32 from "thirty-two"
-import * as crypto from "crypto"
+import * as bs32 from "thirty-two";
+import { createHmac, randomBytes } from "crypto";
 
 function hexToBytes(hex) {
-    var bytes = [];
-    for (var c = 0, C = hex.length; c < C; c += 2) {
-        bytes.push(parseInt(hex.substr(c, 2), 16));
-    }
-    return bytes;
+  var bytes = [];
+  for (var c = 0, C = hex.length; c < C; c += 2) {
+    bytes.push(parseInt(hex.substr(c, 2), 16));
+  }
+  return bytes;
 }
 
 export function getOtpSecret(size: number = 16): string {
-    var set = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz!@#$%^&*()<>?/[]{},.:;';
-    var res = '';
-    while (res.length < size) {
-        res += set[Math.floor(Math.random() * set.length)];
-    }
-    return bs32.encode(res).toString().replace(/=/g, '');
+  return bs32
+    .encode(randomBytes(size))
+    .toString()
+    .replace(/=/g, "");
 }
 
 /**
- * format 
+ * format
  * otpauth://TYPE/LABEL?PARAMETERS
  * TYPE 支持 hotp 或 totp；
  * LABEL 用来指定用户身份，例如用户名、邮箱或者手机号，前面还可以加上服务提供者，需要做 URI 编码。它是给人看的，不影响最终校验码的生成。
@@ -32,12 +30,14 @@ export function getOtpSecret(size: number = 16): string {
  * issuer：可选（强烈推荐），指定服务提供者。这个字段会在 Google Authenticator 客户端中单独显示，在添加了多个服务者提供的 2FA 后特别有用；
  * 详细参考： https://github.com/google/google-authenticator/wiki/Key-Uri-Format
  */
-export function getGoogleTotpUri(secret: string, sp: string = "app", user: string): string {
-    const protocol = "otpauth://"
-    const type = "totp"
-    // sp = 服务提供者
-    const res = `${protocol}${type}/${sp}:${user}?secret=${secret}`
-    return res
+export function getGoogleTotpUri(
+  secret: string,
+  user: string = "",
+  type: string = "totp",
+  sp: string = "app"
+): string {
+  // sp = 服务提供者
+  return `otpauth://${type}/${sp}:${user}?secret=${secret}`;
 }
 
 /**
@@ -51,19 +51,26 @@ export function getGoogleTotpUri(secret: string, sp: string = "app", user: strin
  * 4. 取上一步结果转化为十进制，只要六位数字，所以对一百万进行取模即可。如果结果不是六位数字前置补零。
  */
 export function getOtpCode(secret: string, expire: number = 30): string {
-    const step: string = Math.floor(Date.now() / (expire * 1000)).toString()
-    const hash: string = crypto.createHmac("sha1", secret).update(step).digest("hex")
-    var h = hexToBytes(hash);
-    var offset = h[19] & 0xf;
-    const v = (h[offset] & 0x7f) << 24 |
-        (h[offset + 1] & 0xff) << 16 |
-        (h[offset + 2] & 0xff) << 8 |
-        (h[offset + 3] & 0xff) % 1000000;
-    return Array(7 - String(v).length).join('0') + String(v)
+  const step: string = Math.floor(Date.now() / (expire * 1000)).toString();
+  const hash: string = createHmac("sha1", secret)
+    .update(step)
+    .digest("hex");
+  var h = hexToBytes(hash);
+  var offset = h[19] & 0xf;
+  const v =
+    ((h[offset] & 0x7f) << 24) |
+    ((h[offset + 1] & 0xff) << 16) |
+    ((h[offset + 2] & 0xff) << 8) |
+    (h[offset + 3] & 0xff) % 1000000;
+
+  return String(v).padStart(6, "0");
 }
 
-export function checkCodeFromClient(secret: string, code: string | number): boolean {
-    const serverCode = getOtpCode(secret)
-    const res = serverCode === String(code)
-    return res
+export function checkCodeFromClient(
+  secret: string,
+  code: string | number
+): boolean {
+  const serverCode = getOtpCode(secret);
+  const res = serverCode === String(code);
+  return res;
 }

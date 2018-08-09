@@ -1,19 +1,11 @@
 {
-    "compilerOptions": {
-        "lib": [
-            "es2015"
-        ],
-        "module": "commonjs",
-        "outDir": "dist",
-        "declaration": true,
-        "declarationDir": "types",
-        "removeComments": true,
-        "alwaysStrict": true
-    },
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "node_modules"
-    ]
+  "compilerOptions": {
+    "lib": ["es2018"],
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "alwaysStrict": true
+  },
+  "include": ["*.ts"],
+  "exclude": ["node_modules"]
 }

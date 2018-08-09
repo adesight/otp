@@ -12,15 +12,12 @@
   },
   "devDependencies": {
     "@types/node": "^8.5.2",
-    "chai": "^4.1.2",
-    "mocha": "^4.1.0",
-    "typescript": "^2.6.2"
+    "typescript": "^3.0.0"
   },
   "scripts": {
-    "test": "mocha",
     "build": "tsc"
   },
   "engines": {
-    "node": ">8"
+    "node": ">=8.9.0"
   }
 }
