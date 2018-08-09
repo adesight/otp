@@ -9,7 +9,7 @@ import {
     getOtpSecret,
     getOtpCode,
     checkCodeFromClient
-} from './dist/index.js'
+} from 'totp'
 
 // get otp string
 const secretForClient = getOtpSecret();
